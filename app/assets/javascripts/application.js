@@ -14,6 +14,3 @@
 //= require jquery/dist/jquery
 //= require activestorage
 //= require turbolinks
-//= require_tree .
-//= require quagga/dist/quagga
-//= require jsqr/dist/jsQR
