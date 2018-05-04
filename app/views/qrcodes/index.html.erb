@@ -1,0 +1,88 @@
+<h1>QR Code Example</h1>
+
+<div>
+  <button id="start-button">Start</button>
+  <button id="stop-button">Stop</button>
+</div>
+<div>Data: <span id="data"></span></div>
+
+<video id="video" hidden></video>
+<canvas id="canvas"></canvas>
+
+<%= javascript_include_tag 'jsqr/dist/jsQR' %>
+<script>
+var data;
+var video;
+var canvas;
+var context;
+
+window.onload = function() {
+  data = document.getElementById('data');
+  video = document.getElementById('video');
+  canvas = document.getElementById('canvas');
+  context = canvas.getContext('2d');
+
+  document.getElementById('start-button').addEventListener('click', startVideo);
+  document.getElementById('stop-button').addEventListener('click', stopVideo);
+};
+
+function startVideo() {
+  var constraints = { video: { facingMode: 'environment' }, audio: false };
+  navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
+    video.srcObject = stream;
+    video.setAttribute('playsinline', true);
+    video.play();
+    requestAnimationFrame(detectQR);
+  }).catch(function(err) {
+    console.log('Error: ' + err);
+  });
+}
+
+function detectQR() {
+  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    canvas.height = video.videoHeight;
+    canvas.width = video.videoWidth;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    var code = jsQR(imageData.data, imageData.width, imageData.height);
+
+    if (code) {
+      drawLine(code.location.topLeftCorner, code.location.topRightCorner);
+      drawLine(code.location.topRightCorner, code.location.bottomRightCorner);
+      drawLine(code.location.bottomRightCorner, code.location.bottomLeftCorner);
+      drawLine(code.location.bottomLeftCorner, code.location.topLeftCorner);
+      data.innerText = code.data;
+    } else {
+      data.innerText = null;
+    }
+  }
+
+  requestAnimationFrame(detectQR);
+}
+
+function drawLine(begin, end, color) {
+  context.beginPath();
+  context.moveTo(begin.x, begin.y);
+  context.lineTo(end.x, end.y);
+  context.lineWidth = 4;
+  context.strokeStyle = '#ff3b58';
+  context.stroke();
+}
+
+function stopVideo() {
+  var stream = video.srcObject;
+
+  if (stream === null) {
+    return;
+  }
+
+  var tracks = stream.getTracks();
+  tracks.forEach(function(track) {
+    track.stop();
+  });
+
+  video.srcObject = null;
+  context.clearRect(0, 0, canvas.width, canvas.height);
+}
+</script>
